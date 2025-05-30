@@ -1,0 +1,503 @@
+---
+title: "Assignment 1"
+output: html_document
+date: "2024-03-28"
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**Jeremy Djohar Riyadi Group 6**
+
+### Dataset Description
+
+Dataset : World Happiness Report 2023 Source: The World Happiness Report (a partnership of Gallup, the Oxford Wellbeing Research Centre, the UN Sustainable Development Solutions Network, and the WHR's Editorial Board)
+
+Dataset variable description:
+
+- country: country name
+
+- region: geographic region or continent
+
+- happiness_score: a measure of overall happiness
+
+- gdp_per_capita: measure of gross domestic product per capita
+
+- social_support: a measure of the quality of social support offered by the country and a person's social life
+
+- healthy_life_expectancy: a measure of a person's healthy life expectancy
+
+- freedom_to_make_life_choices: someone's freedom to make decisions - generosity: a measure of someone's generosity
+
+- perceptions_of_corruption: a person's perception of corruption in a country
+
+### Calls the libraries and functions used
+
+```{r}
+source("explorationFunction.R") # for BasicSummary function
+
+library(corrplot) # to create a correlation plot to look for correlation between variables
+
+library(ggplot2) # to create a plot: bar plot, scatter plot
+library(dplyr) # for data manipulation and transformation: filter(), group_by(), others
+```
+
+### Opens a CSV file and converts it to a dataframe
+
+```{r}
+x = read.csv("WHR_2023.csv")
+df = data.frame(x)
+```
+
+Displays a dataframe so it is easy to see what data is contained in it.
+It is known that the dataframe has 137 rows and 9 columns.
+
+## View variable characters
+
+```{r}
+str(df)
+```
+
+The dataframe has 137 observations with 9 variables, 2 categorical and 7 numerical.
+The two categorical variables, namely country and region, have character data types.
+Meanwhile, the numerical variables consist of happiness_score, gdp_per_capita, social_support, healthy_life_expectancy, freedom_to_make_life_choices, generosity, and perceptions_of_corruption.
+The first 5 data for each variable in the dataframe are also displayed.
+
+```{r}
+summary(df)
+```
+
+Displays summary data in the dataframe, in the form of the mean, 5 number summary, and the number of missing values(NA).
+It can be seen that for the variable healthy_life_expectancy there is 1 null value.
+
+## Check and delete null values
+
+```{r}
+sum(is.na(df))
+which(!complete.cases(df)) # palestine -> healthy_life_expectancy (row 99)
+
+df <- df[-99, ]
+rownames(df) <- seq_len(nrow(df)) 
+# so that the index is directly connected
+```
+
+There was 1 null value in row 99 column 5, which was then deleted, so the dataframe now has 136 rows and 9 columns.
+
+### Check duplicated values
+
+```{r}
+duplicated(df) #no duplication
+```
+
+There are no duplicate values.
+
+### Looking for outliers in the happiness_score variable
+
+```{r}
+FindOutliers(df$happiness_score)
+```
+
+According to the Three Sigma method there is 1 outlier.
+According to the Hampel method, there is 1 outlier.
+According to the Boxplot Rule there are 9 outliers.
+
+### Removing outliers (using Z score)
+
+```{r}
+sd(df$happiness_score) # standard deviation before outliers are removed
+
+threshold <- sd(df$happiness_score) * 3
+
+# Remove rows with happiness_score values greater than the threshold
+dfCleaned <- df %>%
+  filter(abs(happiness_score - mean(happiness_score)) < threshold)
+
+sd(dfCleaned$happiness_score) # standar deviasi setelah outlier dihapus
+```
+
+Standard deviation before the outlier is removed = 1.142841 Standard deviation after the outlier is removed = 1.101689 Because the difference is only 0.04, the outlier does not have much effect on the data so it does not need to be removed
+
+### Looking for outliers in the gdp_per_capita variable
+
+```{r}
+FindOutliers(df$gdp_per_capita)
+```
+
+According to the Three Sigma method there is 1 outlier.
+According to the Hampel method there are 0 outliers.
+According to the Boxplot Rule there are 10 outliers.
+
+### Looking for outliers in the social_support variable
+
+```{r}
+FindOutliers(df$social_support)
+```
+
+According to the Three Sigma method there is 1 outlier.
+According to the Hampel method, there are 2 outliers.
+According to the Boxplot Rule there are 18 outliers.
+
+### Looking for outliers in the healthy_life_expectancy variable
+
+```{r}
+FindOutliers(df$healthy_life_expectancy)
+```
+
+According to the Three Sigma method there are 0 outliers.
+According to the Hampel method there are 0 outliers.
+According to the Boxplot Rule there are 15 outliers.
+
+### Looking for outliers in the freedom_to_make_life_choices variable
+
+```{r}
+FindOutliers(df$freedom_to_make_life_choices)
+```
+
+According to the Three Sigma method there is 1 outlier.
+According to the Hampel method, there is 1 outlier.
+According to the Boxplot Rule there are 13 outliers.
+
+### Look for outliers in the loyalty variable
+
+```{r}
+FindOutliers(df$generosity)
+```
+
+According to the Three Sigma method there are 2 outliers.
+According to the Hampel method, there are 2 outliers.
+According to the Boxplot Rule there are 12 outliers.
+
+### Looking for outliers in the perception_of_corruption variable
+
+```{r}
+FindOutliers(df$perceptions_of_corruption)
+```
+
+According to the Three Sigma method there are 2 outliers.
+According to the Hampel method there are 12 outliers.
+According to the Boxplot Rule there are 11 outliers.
+
+### View correlation between numerical variables
+
+```{r}
+newDf <- subset(df, select = -c(region, country))
+
+c <- cor(newDf)
+corrplot(c, type="upper", method="number")
+```
+
+Correlation plot displays the correlation between variables.
+The darker the color and the closer the number is to -1.0 or 1.0, the greater the correlation between the variables.
+For example, the correlation between happiness_score and gdp_per_capta is 0.78.
+Because 0.78 is close to 1.0, happiness_score and gdp_per_capita are strongly correlated.
+Meanwhile, the correlation between healthy_life_expectancy and generosity is only 0.14, therefore the correlation is weak.
+It can be concluded that the happiness_score variable has a strong correlation with gdp_per_capita, social_support, healthy_life_expectancy, and freedom_to_make_life_choices.
+
+### Correlation tests on several variables to prove the correlation plot
+
+```{r}
+cor.test(newDf$happiness_score, newDf$gdp_per_capita, method = c("pearson")) #0.7843422
+cor.test(newDf$gdp_per_capita, newDf$social_support, method = c("pearson")) #0.7379928
+cor.test(newDf$gdp_per_capita, newDf$healthy_life_expectancy, method = c("pearson")) #0.8375183 
+cor.test(newDf$happiness_score, newDf$healthy_life_expectancy, method = c("pearson")) #0.7466993
+```
+
+The first result shows that the correlation between the happiness_score variable and gdp_per_capita is 0.7838113, meaning it is strongly correlated.
+The second result shows that the correlation between the gdp_per_capita variable and social_support is 0.7417151, meaning it is strongly correlated.
+The third result shows that the correlation between the happiness_score and healthy_life_expectancy variables is 0.8375183, meaning that they are strongly correlated.
+The fourth result shows that the correlation between the happiness_score and healthy_life_expectancy variables is 0.7466993, meaning that they are strongly correlated.
+
+### Average happiness score by region
+
+```{r}
+happinessByRegion <- df %>%
+  group_by(region) %>%
+  summarize(mean_happiness = mean(happiness_score, na.rm = TRUE))
+
+ggplot(happinessByRegion, 
+       aes(x = reorder(region, -mean_happiness), y = mean_happiness)) + 
+  geom_bar(stat = "identity", fill = "#458B74", color = "gray") +
+  geom_text(aes(label = round(mean_happiness, 2)), vjust = -0.5) +
+  labs(x = "Region", y = "Mean Happiness Score", title = "Mean Happiness Score by Region") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+The bar plot shows a comparison between the average happiness_score per region.
+It was found that North America and ANZ (Australia and New Zealand) had the highest happiness_score of 7.02.
+
+### Highest Happiness score by country (\>7.0)
+
+```{r}
+filtered_data <- df %>%
+  filter(happiness_score >= 7.0)
+
+ggplot(filtered_data, 
+       aes(x = reorder(country, -happiness_score), y = happiness_score)) + 
+  geom_bar(stat = "identity", fill = "#458B74", color = "gray") +
+  geom_text(aes(label = round(happiness_score, 2)), vjust = -0.5) +
+  labs(x = "Region", y = "Mean Happiness Score", title = "Top Happiness Score by Country") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+The bar plot shows countries with a happiness_score above 7.0, consisting of 12 countries, namely Finland, Denmark, Iceland, Israel, Netherlands, Sweden, Norway, Switzerland, Luxembourg, New Zealand, Austria and Australia.
+
+## Create a scatter plot to show the relationship between variables
+
+```{r}
+ggplot(data=df, mapping=aes(x=gdp_per_capita,y=happiness_score)) +
+  geom_point(pch=21,color="steelblue",fill="darkgray",size=2) +
+  labs(x="GDP",y="Happiness Score", title = "Happiness Score & GDP") +
+  geom_smooth(method="lm")
+```
+
+happiness_score and gdp_per_capita have a linear relationship.
+The higher the happiness_score, the higher the gdp_per_capita.
+
+```{r}
+ggplot(data=df, mapping=aes(x=social_support,y=happiness_score)) +
+  geom_point(pch=21,color="steelblue",fill="darkgray",size=2) +
+  labs(x="Social Support",y="Happiness Score", title = "Happiness Score & Social Support") +
+  geom_smooth(method="lm")
+```
+
+happiness_score and social_support have a linear relationship.
+The higher the happiness_score, the higher the social_support.
+
+```{r}
+ggplot(data=df, mapping=aes(x=healthy_life_expectancy,y=happiness_score)) +
+  geom_point(pch=21,color="steelblue",fill="darkgray",size=2) +
+  labs(x="Healthy Life Expectancy",y="Happiness Score", title = "Happiness Score & Healthy Life Expectancy") +
+  geom_smooth(method="lm")
+```
+
+happiness_score and healthy_life_expectancy have a linear relationship.
+The higher the happiness_score, the higher the healthy_life_expectancy.
+
+```{r}
+ggplot(data=df, mapping=aes(x=freedom_to_make_life_choices,y=happiness_score)) +
+  geom_point(pch=21,color="steelblue",fill="darkgray",size=2) +
+  labs(x="Freedom to Make Life Choices",y="Happiness Score", title = "Happiness Score & Freedom to Make Life Choices") +
+  geom_smooth(method="lm")
+```
+
+happiness_score and freedom_to_make_life_choices have a linear relationship.
+The higher the happiness_score, the higher the freedom_to_make_life_choices.
+
+```{r}
+ggplot(data=df, mapping=aes(x=generosity,y=happiness_score)) +
+  geom_point(pch=21,color="steelblue",fill="darkgray",size=2) +
+  labs(x="Generosity",y="Happiness Score", title = "Happiness Score & Generosity") +
+  geom_smooth(method="lm")
+```
+
+happiness_score and loyalty have a linear relationship.
+The higher the happiness_score, the higher the loyalty
+
+```{r}
+ggplot(data=df, mapping=aes(x=perceptions_of_corruption,y=happiness_score)) +
+  geom_point(pch=21,color="steelblue",fill="darkgray",size=2) +
+  labs(x="Perceptions of Corruption",y="Happiness Score", title = "Happiness Score & Perceptions of Corruption") +
+  geom_smooth(method="lm")
+```
+
+happiness_score and perceptions_of_corruption have a linear relationship.
+The higher the happiness_score, the higher the perception_of_corruption.
+
+```{r}
+ggplot(data=df, mapping=aes(x=gdp_per_capita,y=social_support)) +
+  geom_point(pch=21,color="steelblue",fill="darkgray",size=2) +
+  labs(x="GDP",y="Social Support", title = "Social Support & GDP") +
+  geom_smooth(method="lm")
+```
+
+gdp_per_capita and social_support have a linear relationship.
+The higher gdp_per_capita, the higher social_support.
+
+```{r}
+ggplot(data=df, mapping=aes(x=gdp_per_capita,y=healthy_life_expectancy)) +
+  geom_point(pch=21,color="steelblue",fill="darkgray",size=2) +
+  labs(x="GDP",y="Healthy Life Expectancy", title = "Healthy Life Expectancy & GDP") +
+  geom_smooth(method="lm")
+```
+
+gdp_per_capita and healthy_life_expectancy have a linear relationship.
+The higher gdp_per_capita, the higher healthy_life_expectancy.
+
+```{r}
+ggplot(data=df, mapping=aes(x=gdp_per_capita,y=freedom_to_make_life_choices)) +
+  geom_point(pch=21,color="steelblue",fill="darkgray",size=2) +
+  labs(x="GDP",y="Freedom to Make Life Choices", title = "Freedom to Make Life Choices & GDP") +
+  geom_smooth(method="lm")
+```
+
+gdp_per_capita and freedom_to_make_life_choices have a linear relationship.
+The higher gdp_per_capita, the higher freedom_to_make_life_choices.
+
+```{r}
+ggplot(data=df, mapping=aes(x=gdp_per_capita,y=generosity)) +
+  geom_point(pch=21,color="steelblue",fill="darkgray",size=2) +
+  labs(x="GDP",y="Generosity", title = "Generosity & GDP") +
+  geom_smooth(method="lm")
+```
+
+gdp_per_capita and generosity have a linear relationship.
+The more gdp_per_capita goes up, the more generosity goes down.
+
+```{r}
+ggplot(data=df, mapping=aes(x=gdp_per_capita,y=perceptions_of_corruption)) +
+  geom_point(pch=21,color="steelblue",fill="darkgray",size=2) +
+  labs(x="GDP",y="Perceptions of Corruption", title = "Perceptions of Corruption & GDP") +
+  geom_smooth(method="lm")
+```
+
+gdp_per_capita and perceptions_of_corruption have a linear relationship.
+The higher gdp_per_capita, the higher perceptions_of_corruption.
+
+```{r}
+ggplot(data=df, mapping=aes(x=social_support,y=healthy_life_expectancy)) +
+  geom_point(pch=21,color="steelblue",fill="darkgray",size=2) +
+  labs(x="Social Support",y="Healthy Life Expectancy", title = "Social Support & Healthy Life Expectancy") +   geom_smooth(method="lm")
+```
+
+social_support and healthy_life_expectancy have a linear relationship.
+The higher the social_support, the higher the healthy_life_expectancy.
+
+```{r}
+ggplot(data=df, mapping=aes(x=social_support,y=freedom_to_make_life_choices)) +
+  geom_point(pch=21,color="steelblue",fill="darkgray",size=2) +
+  labs(x="Social Support",y="Freedom to Make Life Choices", title = "Social Support & Freedom to Make Life Choices") +   geom_smooth(method="lm")
+```
+
+social_support and freedom_to_make_life_choices have a linear relationship.
+The higher the social_support, the higher the freedom_to_make_life_choices.
+
+```{r}
+ggplot(data=df, mapping=aes(x=social_support,y=generosity)) +
+  geom_point(pch=21,color="steelblue",fill="darkgray",size=2) +
+  labs(x="Social Support",y="Generosity", title = "Social Support & Generosity") +   geom_smooth(method="lm")
+```
+
+social_support and generosity have a linear relationship.
+As social_support increases, loyalty remains constant.
+
+```{r}
+ggplot(data=df, mapping=aes(x=social_support,y=perceptions_of_corruption)) +
+  geom_point(pch=21,color="steelblue",fill="darkgray",size=2) +
+  labs(x="Social Support",y="Perceptions of Corruption", title = "Social Support & Perceptions of Corruption") +   geom_smooth(method="lm")
+```
+
+social_support and perceptions_of_corruption have a linear relationship.
+The higher the social_support, the higher the perception_of_corruption.
+
+```{r}
+ggplot(data=df, mapping=aes(x=healthy_life_expectancy,y=freedom_to_make_life_choices)) +
+  geom_point(pch=21,color="steelblue",fill="darkgray",size=2) +
+  labs(x="Healthy Life Expectancy",y="Freedom to Make Life Choices", title = "Healthy Life Expectancy & Freedom to Make Life Choices") +   geom_smooth(method="lm")
+```
+
+healthy_life_expectancy and freedom_to_make_life_choices have a linear relationship.
+The higher the healthy_life_expectancy, the higher the freedom_to_make_life_choices.
+
+```{r}
+ggplot(data=df, mapping=aes(x=healthy_life_expectancy,y=generosity)) +
+  geom_point(pch=21,color="steelblue",fill="darkgray",size=2) +
+  labs(x="Healthy Life Expectancy",y="Generosity", title = "Healthy Life Expectancy & Generosity") +   geom_smooth(method="lm")
+```
+
+healthy_life_expectancy and generosity have a linear relationship.
+The more healthy_life_expectancy goes up, the more generosity goes down.
+
+```{r}
+ggplot(data=df, mapping=aes(x=healthy_life_expectancy,y=perceptions_of_corruption)) +
+  geom_point(pch=21,color="steelblue",fill="darkgray",size=2) +
+  labs(x="Healthy Life Expectancy",y="Perceptions of Corruption", title = "Healthy Life Expectancy & Perceptions of Corruption") +   geom_smooth(method="lm")
+```
+
+healthy_life_expectancy and perceptions_of_corruption have a linear relationship.
+The higher healthy_life_expectancy, the higher perceptions_of_corruption.
+
+```{r}
+ggplot(data=df, mapping=aes(x=freedom_to_make_life_choices,y=generosity)) +
+  geom_point(pch=21,color="steelblue",fill="darkgray",size=2) +
+  labs(x="Freedom to Make Life Choices",y="Generosity", title = "Freedom to Make Life Choices & Generosity") +   geom_smooth(method="lm")
+```
+
+freedom_to_make_life_choices and generosity have a linear relationship.
+The higher the freedom_to_make_life_choices, the higher the generosity.
+
+```{r}
+ggplot(data=df, mapping=aes(x=freedom_to_make_life_choices,y=perceptions_of_corruption)) +
+  geom_point(pch=21,color="steelblue",fill="darkgray",size=2) +
+  labs(x="Freedom to Make Life Choices",y="Perceptions of Corruption", title = "Freedom to Make Life Choices & Perceptions of Corruption") +   geom_smooth(method="lm")
+```
+
+freedom_to_make_life_choices and perceptions_of_corruption have a linear relationship.
+The higher freedom_to_make_life_choices, the higher perceptions_of_corruption.
+
+```{r}
+ggplot(data=df, mapping=aes(x=generosity,y=perceptions_of_corruption)) +
+  geom_point(pch=21,color="steelblue",fill="darkgray",size=2) +
+  labs(x="Generosity",y="Perceptions of Corruption", title = "Generosity & Perceptions of Corruption") +   geom_smooth(method="lm")
+```
+
+loyalty and perceptions_of_corruption have a linear relationship.
+The higher the generosity, the higher the perception_of_corruption.
+
+## Comparing Indonesian Data with Other Countries
+
+```{r}
+#filter indonesia data
+indonesias <- df %>%
+  filter(country == "Indonesia")
+
+others <- df %>%
+  filter(country != "Indonesia")
+
+rows <- c("happiness_score", "gdp_per_capita", "social_support", "healthy_life_expectancy", "freedom_to_make_life_choices", "generosity", "perceptions_of_corruption")
+
+comparison <- data.frame(Index = rows,
+  Indonesia = c(indonesias$happiness_score, indonesias$gdp_per_capita, indonesias$social_support, indonesias$healthy_life_expectancy, indonesias$freedom_to_make_life_choices, indonesias$generosity, indonesias$perceptions_of_corruption),
+  Other = c(mean(others$happiness_score), mean(others$gdp_per_capita), mean(others$social_support), mean(others$healthy_life_expectancy), mean(others$freedom_to_make_life_choices), mean(others$generosity), mean(others$perceptions_of_corruption))
+)
+comparison
+
+```
+
+Dataframe comparison compares the values ​​of each variable for Indonesia with other countries.
+With this dataframe, we can compare the condition of Indonesia's happiness rate with other countries and the variables that influence it.
+Based on the dataframe comparison above, Indonesia's happiness_score is slightly below the average happiness_score of other countries, as well as variables such as gdp_per_capita, healthy_life_expectancy, and perceptions_of_corruption.
+Meanwhile, variables such as social_support, freedom_to_make_life_choices, and generosity are slightly above the average for other countries.
+Thus, Indonesia's overall happiness_score is 5,277.
+The comparison dataframe is then visualized in the bar plot below.
+
+```{r}
+comparison_long <- tidyr::pivot_longer(comparison, cols = c(Indonesia, Other),
+                                       names_to = "Country", values_to = "Value")
+
+ggplot(comparison_long, aes(x = Value, y = Index, fill = Country)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(title = "Comparison of Factors between Indonesia and Other Countries",
+       x = "Value", y = "Index") +
+  scale_fill_manual(values = c("Indonesia" = "red", "Other" = "grey")) +
+  theme_minimal()
+```
+
+## Conclusion
+
+From the World Happiness Records 2023 dataset, it can be concluded that the country with the highest happiness record is Finland, with a happiness score of 7,804.
+Meanwhile, there are 12 countries with a happiness record of more than 7.0, namely, Finland, Denmark, Iceland, Israel, Netherlands, Sweden, Norway, Switzerland, Luxembourg, New Zealand, Austria, Australia.
+
+After carrying out a correlation test, it was found that the variables that were strongly correlated with a country's happiness score were GDP per capita, social support, healthy life expectancy, and freedom to make life choices, with a correlation value close to 1.0.
+
+Meanwhile, all variables are linearly correlated with each other.
+Most are positively correlated, where when variable 1 increases, variable 2 also increases.
+However, the GDP per capita variable with generosity and also the healthy life expectancy variable with generosity are negatively correlated, that is, when variable 1 rises, variable 2 actually falls.
+
+Therefore, in conclusion, a country's happiness score is influenced by the following factors: how big a country's GDP per capita is, the quality of social support offered by a country and the quality of a person's social life, how high a country's healthy life expectancy is, and also how much opportunity a person has to make a decision.
+
+Indonesia has a happiness_score of 5,277 which is slightly below the average happiness_score of other countries.
+This is not too bad, but there are still many factors that can be improved so that Indonesia's happiness_score can increase, such as in terms of the level of corruption, healthy life expectancy, and GDP per capita.
